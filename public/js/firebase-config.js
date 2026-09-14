@@ -10,12 +10,13 @@ import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app-check.js";
 
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  projectId: "TU_PROYECTO",
-  storageBucket: "TU_PROYECTO.appspot.com",
-  messagingSenderId: "TU_SENDER_ID",
-  appId: "TU_APP_ID"
+   apiKey: "AIzaSyA5yg3MZYVTtEeL9sQeJRTL96UvgUNrV5U",
+  authDomain: "profesor-online-43d5c.firebaseapp.com",
+  projectId: "profesor-online-43d5c",
+  storageBucket: "profesor-online-43d5c.firebasestorage.app",
+  messagingSenderId: "179840660434",
+  appId: "1:179840660434:web:5f50eb8c9a5f29e38e4e0b",
+  measurementId: "G-4008KDPWKY"
 };
 
 export const app = initializeApp(firebaseConfig);
