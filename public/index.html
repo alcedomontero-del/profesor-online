@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academia — Desarrollo Web Full Stack</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="franja"></div>
+
+  <main class="acceso">
+    <div class="acceso-marca">
+      <p class="acceso-eyebrow">academia de desarrollo web</p>
+      <h1>Aprende a construir.<br>Que un agente te lo demuestre.</h1>
+      <p class="acceso-sub">
+        Clases, tareas y evaluaciones generadas por un profesor de IA.
+        Tu progreso se registra automáticamente hasta que estés listo
+        para el certificado.
+      </p>
+    </div>
+
+    <div class="acceso-panel">
+      <div class="tabs">
+        <button class="tab activa" data-tab="entrar">Entrar</button>
+        <button class="tab" data-tab="registro">Crear cuenta</button>
+      </div>
+
+      <form id="form-entrar" class="form-acceso">
+        <label>Correo
+          <input type="email" name="email" required autocomplete="email">
+        </label>
+        <label>Contraseña
+          <input type="password" name="password" required autocomplete="current-password">
+        </label>
+        <p class="error" id="error-entrar"></p>
+        <button type="submit" class="btn-primario">Entrar</button>
+      </form>
+
+      <form id="form-registro" class="form-acceso oculto">
+        <label>Nombre
+          <input type="text" name="nombre" required autocomplete="name">
+        </label>
+        <label>Correo
+          <input type="email" name="email" required autocomplete="email">
+        </label>
+        <label>Contraseña
+          <input type="password" name="password" required autocomplete="new-password" minlength="6">
+        </label>
+        <p class="error" id="error-registro"></p>
+        <button type="submit" class="btn-primario">Crear cuenta</button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <a href="#" id="link-donar" target="_blank" rel="noopener">Apoya este proyecto</a>
+    ·
+    <a href="prueba-local/index.html">Modo de prueba local (sin Firebase)</a>
+  </footer>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>

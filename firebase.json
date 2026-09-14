@@ -1,0 +1,10 @@
+{
+  "firestore": {
+    "rules": "docs/firestore.rules"
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "prueba-local/**"],
+    "rewrites": []
+  }
+}

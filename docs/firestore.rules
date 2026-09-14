@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function esAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+    }
+
+    function esDueno(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /usuarios/{uid} {
+      allow read: if esDueno(uid) || esAdmin();
+      // el estudiante puede editar su propio perfil y su "progreso" (lo actualiza el
+      // agente Profesor corriendo en su navegador tras calificar un intento), pero
+      // NUNCA su "suscripcion" ni su "rol" — esos solo los toca el admin.
+      // LIMITACIÓN CONOCIDA: al no haber backend propio, un cliente modificado podría
+      // escribir un "progreso.capacitado" falso. Ver docs/CONTINUACION.md, sección
+      // "Limitaciones de seguridad conocidas", para la solución futura (Cloud Function).
+      allow update: if esDueno(uid) &&
+        request.resource.data.suscripcion == resource.data.suscripcion &&
+        request.resource.data.rol == resource.data.rol;
+      allow write: if esAdmin();
+      allow create: if esDueno(uid);
+    }
+
+    match /modulos/{moduloId} {
+      allow read: if request.auth != null;
+      allow write: if esAdmin(); // el Ingeniero-agente escribe con credenciales de admin/backend
+    }
+
+    match /evaluaciones/{evalId} {
+      // el estudiante NUNCA debe poder leer respuestaCorrectaIndex directamente;
+      // en la v1 esto se resuelve sirviendo las preguntas sin esa clave desde el cliente
+      // (se filtra en el código de la app antes de mostrarlas) y validando la respuesta
+      // del lado del agente/Cloud Function antes de guardar el resultado.
+      allow read: if request.auth != null;
+      allow write: if esAdmin();
+    }
+
+    match /resultados/{resultadoId} {
+      allow read: if esAdmin() ||
+        (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if esAdmin();
+    }
+
+    match /solicitudes_agente/{id} {
+      allow read: if esAdmin();
+      allow write: if esAdmin();
+    }
+
+    match /certificados/{id} {
+      allow read: if esAdmin() ||
+        (request.auth != null && resource.data.uid == request.auth.uid);
+      allow write: if esAdmin();
+    }
+
+    match /configuracion/{doc} {
+      allow read: if true; // el botón de donación es público
+      allow write: if esAdmin();
+    }
+
+    match /plantillas_clase/{id} {
+      allow read: if request.auth != null; // el agente Profesor las lee desde el navegador del admin
+      allow write: if esAdmin();
+    }
+
+    match /plantillas_evaluacion/{id} {
+      allow read: if request.auth != null;
+      allow write: if esAdmin();
+    }
+
+    match /recursos/{id} {
+      // solo el admin sube/lee recursos; los agentes corren en la sesión del admin
+      allow read, write: if esAdmin();
+    }
+  }
+}

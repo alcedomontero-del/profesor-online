@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modo de prueba local — Academia</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="franja"></div>
+
+  <main class="acceso" style="grid-template-columns:1fr; max-width:640px;">
+    <div class="acceso-marca">
+      <p class="acceso-eyebrow">modo de prueba local — sin firebase real</p>
+      <h1>Prueba los agentes antes de conectar</h1>
+      <p class="acceso-sub">
+        Todo lo que hagas aquí se guarda solo en este navegador (localStorage).
+        El agente Ingeniero genera contenido de ejemplo en vez de llamar a Gemini,
+        así puedes ver el flujo completo (negociación, clases, quizzes,
+        calificación, certificado) sin tener credenciales todavía.
+      </p>
+    </div>
+
+    <div class="acceso-panel">
+      <div style="display:flex; flex-direction:column; gap:0.9rem;">
+        <button id="btn-estudiante" class="btn-primario">Entrar como estudiante de prueba</button>
+        <button id="btn-admin" class="btn-primario" style="background:var(--ambar);">Entrar como administrador de prueba</button>
+        <button id="btn-reiniciar" style="background:none; border:1px solid var(--borde); color:var(--texto-tenue); border-radius:6px; padding:0.6rem; cursor:pointer;">
+          Reiniciar datos de prueba
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <a href="../index.html">Volver al inicio de sesión real</a>
+  </footer>
+
+  <script type="module" src="js/login.js"></script>
+</body>
+</html>

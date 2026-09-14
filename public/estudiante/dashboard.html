@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu progreso — Academia</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="franja"></div>
+
+  <main class="acceso" style="grid-template-columns:1fr; max-width:720px;">
+    <div class="acceso-marca">
+      <p class="acceso-eyebrow" id="saludo">cargando…</p>
+      <h1>Tu progreso</h1>
+      <p class="acceso-sub" id="estado-suscripcion"></p>
+    </div>
+
+    <div class="acceso-panel">
+      <p class="acceso-eyebrow" style="margin-bottom:0.6rem;">clases</p>
+      <div id="lista-modulos" style="display:flex; flex-direction:column; gap:0.6rem;">
+        <p style="color:var(--texto-tenue); font-family:var(--fuente-mono); font-size:0.85rem;">
+          Cargando…
+        </p>
+      </div>
+    </div>
+
+    <div class="acceso-panel oculto" id="panel-clase" style="margin-top:1.5rem;">
+      <p class="acceso-eyebrow" id="clase-titulo" style="margin-bottom:0.6rem;">clase</p>
+      <div id="clase-media"></div>
+      <div id="clase-contenido" style="white-space:pre-wrap; line-height:1.6; color:var(--papel); font-size:0.95rem;"></div>
+    </div>
+
+    <div class="acceso-panel" style="margin-top:1.5rem;">
+      <p class="acceso-eyebrow" style="margin-bottom:0.6rem;">evaluaciones disponibles</p>
+      <div id="lista-evaluaciones" style="display:flex; flex-direction:column; gap:0.6rem;">
+        <p style="color:var(--texto-tenue); font-family:var(--fuente-mono); font-size:0.85rem;">
+          Cargando…
+        </p>
+      </div>
+    </div>
+
+    <div class="acceso-panel oculto" id="panel-quiz" style="margin-top:1.5rem;">
+      <p class="acceso-eyebrow" id="quiz-titulo" style="margin-bottom:0.6rem;">quiz</p>
+      <form id="form-quiz" class="form-acceso"></form>
+      <p class="error" id="quiz-resultado"></p>
+    </div>
+  </main>
+
+  <script type="module" src="../js/firebase-config.js"></script>
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>

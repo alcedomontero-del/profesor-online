@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin (prueba) — Academia</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="franja"></div>
+
+  <main class="acceso" style="grid-template-columns:1fr; max-width:720px;">
+    <div class="acceso-marca">
+      <p class="acceso-eyebrow">panel administrador <span style="color:var(--texto-tenue);">(modo prueba)</span></p>
+      <h1>Estudiantes y agentes</h1>
+      <p class="acceso-sub"><a href="chat.html" style="color:var(--verde-terminal);">💬 Hablar con el Profesor →</a></p>
+    </div>
+
+    <div class="acceso-panel">
+      <p class="acceso-eyebrow" style="margin-bottom:0.6rem;">agente profesor</p>
+      <form id="form-generar-clase" class="form-acceso">
+        <label>ID del módulo (clase)
+          <input type="text" name="moduloId" placeholder="ej. html-css-basico" required>
+        </label>
+        <label>Tema de la clase
+          <input type="text" name="tema" placeholder="ej. selectores CSS y el modelo de caja" required>
+        </label>
+        <button type="submit" class="btn-primario">Generar clase</button>
+        <p class="error" id="msg-clase"></p>
+      </form>
+      <hr style="border-color:var(--borde); margin:1.2rem 0;">
+      <form id="form-generar-quiz" class="form-acceso">
+        <label>ID del módulo (quiz)
+          <input type="text" name="moduloId" placeholder="ej. html-css-basico" required>
+        </label>
+        <label>Propósito pedagógico
+          <input type="text" name="proposito" placeholder="ej. selectores CSS y el modelo de caja" required>
+        </label>
+        <button type="submit" class="btn-primario">Generar quiz</button>
+        <p class="error" id="msg-quiz"></p>
+      </form>
+    </div>
+
+    <div class="acceso-panel" style="margin-top:1.5rem;">
+      <p class="acceso-eyebrow" style="margin-bottom:0.6rem;">estudiantes</p>
+      <div id="lista-estudiantes" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
+    </div>
+
+    <div class="acceso-panel" style="margin-top:1.5rem;">
+      <p class="acceso-eyebrow" style="margin-bottom:0.6rem;">historial profesor ↔ ingeniero</p>
+      <div id="lista-solicitudes" style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.85rem;"></div>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <a href="index.html">← Salir del modo de prueba</a>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

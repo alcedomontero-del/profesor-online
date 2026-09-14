@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hablar con el Profesor (prueba) — Academia</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="franja"></div>
+
+  <main class="acceso" style="grid-template-columns:1fr; max-width:720px;">
+    <div class="acceso-marca">
+      <p class="acceso-eyebrow">agente profesor <span style="color:var(--texto-tenue);">(modo prueba — sin IA real)</span></p>
+      <h1>Habla con el Profesor</h1>
+      <p class="acceso-sub">
+        Prueba: "crea una clase sobre &lt;tema&gt;", "crea un quiz sobre &lt;tema&gt;", o
+        responde "adelante" cuando te proponga diseñar el programa completo.
+      </p>
+    </div>
+
+    <div class="acceso-panel">
+      <div id="chat-historial" class="chat-historial"></div>
+      <form id="form-chat" class="chat-form">
+        <input type="text" name="mensaje" placeholder="Escríbele al Profesor…" autocomplete="off" required>
+        <button type="submit" class="btn-primario">Enviar</button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <a href="admin.html">← Volver al panel</a>
+  </footer>
+
+  <script type="module" src="js/chat.js"></script>
+</body>
+</html>

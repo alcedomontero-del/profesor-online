@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hablar con el Profesor — Academia</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="franja"></div>
+
+  <main class="acceso" style="grid-template-columns:1fr; max-width:720px;">
+    <div class="acceso-marca">
+      <p class="acceso-eyebrow">agente profesor</p>
+      <h1>Habla con el Profesor</h1>
+      <p class="acceso-sub">
+        Esta pestaña debe permanecer abierta mientras el Profesor trabaje
+        (no hay servidor propio en segundo plano). Él mismo te avisará cuándo
+        necesita que sigas conectado.
+      </p>
+    </div>
+
+    <div class="acceso-panel">
+      <div id="chat-historial" class="chat-historial"></div>
+
+      <form id="form-chat" class="chat-form">
+        <input type="text" name="mensaje" placeholder="Escríbele al Profesor…" autocomplete="off" required>
+        <button type="submit" class="btn-primario">Enviar</button>
+      </form>
+
+      <div style="margin-top:0.8rem; display:flex; gap:0.6rem;">
+        <button id="btn-investigar" class="btn-secundario">🔎 Pedir que investigue un tema</button>
+      </div>
+    </div>
+
+    <div class="acceso-panel" style="margin-top:1.2rem;">
+      <p class="acceso-eyebrow" style="margin-bottom:0.6rem;">recursos para el Profesor</p>
+      <form id="form-recurso-profesor" class="form-acceso">
+        <label>Archivo (guía, ejemplo, material de referencia)
+          <input type="file" name="archivo" required>
+        </label>
+        <label>Descripción breve (para qué sirve)
+          <input type="text" name="descripcion" placeholder="ej. temario oficial del bootcamp">
+        </label>
+        <button type="submit" class="btn-primario">Subir recurso</button>
+        <p class="error" id="msg-recurso-profesor"></p>
+      </form>
+      <div id="lista-recursos-profesor" style="margin-top:0.6rem; font-size:0.85rem; color:var(--texto-tenue);"></div>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <a href="dashboard.html">← Volver al panel</a>
+    &nbsp;·&nbsp;
+    <a href="chat-ingeniero.html">🛠️ Hablar con el Ingeniero →</a>
+  </footer>
+
+  <script type="module" src="../js/firebase-config.js"></script>
+  <script type="module" src="chat.js"></script>
+</body>
+</html>
