@@ -1,16 +1,16 @@
 // Sube un archivo (imagen o video) de una clase a Cloudinary y lo adjunta a la clase
 // correspondiente dentro de modulos/{moduloId}.clases. Reutiliza la misma config
-// de Cloudinary que certificados.js (configuracion/cloudinary, unsigned upload).
+// de Cloudinary que certificados.js y recursos.js (cloudinaryConfig.js, unsigned upload).
 
 import { db } from "./firebase-config.js";
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, CLOUDINARY_CONFIGURED } from "./cloudinaryConfig.js";
 
-async function obtenerConfigCloudinary() {
-  const snap = await getDoc(doc(db, "configuracion", "cloudinary"));
-  if (!snap.exists()) throw new Error("Cloudinary no está configurado (panel admin).");
-  const { cloudName, uploadPreset } = snap.data();
-  if (!cloudName || !uploadPreset) throw new Error("Falta cloudName o uploadPreset en la configuración.");
-  return { cloudName, uploadPreset };
+function obtenerConfigCloudinary() {
+  if (!CLOUDINARY_CONFIGURED) {
+    throw new Error("Cloudinary no está configurado. Edita public/js/cloudinaryConfig.js con tu cloud name y upload preset.");
+  }
+  return { cloudName: CLOUDINARY_CLOUD_NAME, uploadPreset: CLOUDINARY_UPLOAD_PRESET };
 }
 
 async function subirArchivo(file, { cloudName, uploadPreset }) {

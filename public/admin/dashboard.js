@@ -47,11 +47,6 @@ onAuthStateChanged(auth, async (user) => {
   if (config.exists()) {
     document.querySelector('input[name="paypalLink"]').value = config.data().paypalLink || "";
   }
-  const cloudinaryConfig = await getDoc(doc(db, "configuracion", "cloudinary"));
-  if (cloudinaryConfig.exists()) {
-    document.querySelector('input[name="cloudName"]').value = cloudinaryConfig.data().cloudName || "";
-    document.querySelector('input[name="uploadPreset"]').value = cloudinaryConfig.data().uploadPreset || "";
-  }
 
   await cargarEstudiantes();
   await cargarSolicitudes();
@@ -68,23 +63,6 @@ document.getElementById("form-donacion").addEventListener("submit", async (e) =>
   } catch (err) {
     msg.style.color = "#E8703D";
     msg.textContent = "No se pudo guardar. Verifica que tu usuario tenga rol admin en Firestore.";
-  }
-});
-
-document.getElementById("form-cloudinary").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const datos = new FormData(e.target);
-  const msg = document.getElementById("msg-cloudinary");
-  try {
-    await setDoc(doc(db, "configuracion", "cloudinary"), {
-      cloudName: datos.get("cloudName"),
-      uploadPreset: datos.get("uploadPreset")
-    });
-    msg.style.color = "var(--verde-terminal)";
-    msg.textContent = "Guardado.";
-  } catch (err) {
-    msg.style.color = "#E8703D";
-    msg.textContent = "No se pudo guardar.";
   }
 });
 

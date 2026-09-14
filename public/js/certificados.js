@@ -1,19 +1,19 @@
 // Genera el PDF del certificado en el navegador (jsPDF, cargado por <script> en
 // admin/dashboard.html) y lo sube a Cloudinary vía "unsigned upload" (no necesita
 // exponer ninguna clave secreta desde el cliente — solo cloud name + upload preset,
-// que el admin configura en configuracion/cloudinary).
+// que el admin edita en public/js/cloudinaryConfig.js).
 
 import { db } from "./firebase-config.js";
 import {
   doc, getDoc, addDoc, collection, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, CLOUDINARY_CONFIGURED } from "./cloudinaryConfig.js";
 
-async function obtenerConfigCloudinary() {
-  const snap = await getDoc(doc(db, "configuracion", "cloudinary"));
-  if (!snap.exists()) throw new Error("Cloudinary no está configurado (panel admin).");
-  const { cloudName, uploadPreset } = snap.data();
-  if (!cloudName || !uploadPreset) throw new Error("Falta cloudName o uploadPreset en la configuración.");
-  return { cloudName, uploadPreset };
+function obtenerConfigCloudinary() {
+  if (!CLOUDINARY_CONFIGURED) {
+    throw new Error("Cloudinary no está configurado. Edita public/js/cloudinaryConfig.js con tu cloud name y upload preset.");
+  }
+  return { cloudName: CLOUDINARY_CLOUD_NAME, uploadPreset: CLOUDINARY_UPLOAD_PRESET };
 }
 
 function construirPdf(nombreEstudiante, promedio) {

@@ -40,7 +40,7 @@ firebase use --add        # elige tu proyecto, dale un alias como "default"
 firebase deploy --only firestore:rules
 ```
 Esto requiere que exista `firebase.json` apuntando a `docs/firestore.rules` (ya viene
-incluido en este proyecto — ver sección 6).
+incluido en este proyecto — ver sección 8).
 
 ## 4. Crear tu usuario administrador
 El registro público del formulario de login **siempre crea `rol: "estudiante"`** — nunca

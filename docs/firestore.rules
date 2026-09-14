@@ -102,6 +102,8 @@ service cloud.firestore {
     }
 
     match /configuracion/{doc} {
+      // Solo queda "donaciones" aquí — la config de Cloudinary se movió a un archivo
+      // estático (public/js/cloudinaryConfig.js), ya no se guarda en Firestore.
       allow read: if true; // el botón de donación es público
       allow write: if esAdmin();
     }

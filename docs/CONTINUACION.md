@@ -166,6 +166,81 @@ correo `@gmail.com` o `@outlook.com`. Se aplicó en dos capas:
 completo): la calificación sigue corriendo del lado del cliente — ver sección 3.2, sigue
 vigente igual que antes de esta revisión.
 
+## 3.11 Cierre de preparación para producción real: modelo Gemini estable fijado (v20)
+
+El usuario pidió confirmar que el proyecto quedara listo para un despliegue real, no
+solo documentado. Se verificó en vivo (2026-09-14) la página oficial de modelos de
+Firebase AI Logic — es información que cambia seguido y no se puede confiar en el
+conocimiento previo sin revisarla:
+
+- `MODELO_GEMINI` en `firebase-config.example.js` dejó de ser `"gemini-flash-latest"`
+  (alias que la propia documentación de Google desaconseja para producción) y ahora es
+  `"gemini-3.5-flash"`: versión estable, capa gratuita (sin Blaze), con fecha de retiro
+  garantizada "no antes de mayo de 2027" — el mejor equilibrio entre estabilidad y
+  costo de los modelos disponibles a esa fecha (se descartó `gemini-3.8-flash`, más
+  nuevo pero marcado como *short-term availability*, con retiro potencial más cercano).
+- Se corrigió una tercera aparición de la fecha incorrecta de App Check ("desde julio
+  de 2026") — esta vez dentro del propio comentario de `firebase-config.example.js`,
+  no solo en `INSTALACION.md` (ya corregida en 3.9). Ahora dice correctamente 2 de
+  noviembre de 2026 en ambos lugares.
+- `docs/INSTALACION.md`, paso 6, reescrito para reflejar que el modelo ya viene fijado
+  en el código (no hay que buscarlo en la consola), con instrucciones de qué hacer si
+  ya se había copiado `firebase-config.js` con el alias viejo antes de esta corrección.
+
+**Lo que queda fuera del alcance de este asistente, y por qué**: el "puesto en línea"
+de verdad —crear el proyecto en Firebase Console, publicar las reglas, confirmar el
+correo del admin, generar la site key de reCAPTCHA, desplegar a Hosting— requiere
+credenciales y cuentas del usuario a las que este asistente no tiene acceso (sin
+conexión a internet fuera de búsqueda/documentación, sin login a servicios de
+terceros). Lo que sí se garantiza de este lado es que el código no tiene bugs
+conocidos ni configuraciones desalineadas con la documentación oficial vigente — los
+pasos de `docs/INSTALACION.md` son el resto del camino, y son exclusivamente del
+usuario.
+
+## 3.10 Cloudinary: de Firestore/panel admin a archivo estático (v19)
+
+A pedido del usuario, se cambió cómo se configura Cloudinary — antes vivía en
+`configuracion/cloudinary` de Firestore, editable desde un formulario en el panel
+admin; ahora es un archivo estático `public/js/cloudinaryConfig.js` (mismo patrón que
+ya usa el usuario en otros proyectos suyos), consistente con cómo ya funciona
+`firebase-config.js` en este mismo proyecto.
+
+Cambios:
+- Nuevo `public/js/cloudinaryConfig.js` con `CLOUDINARY_CLOUD_NAME`,
+  `CLOUDINARY_UPLOAD_PRESET` y un flag `CLOUDINARY_CONFIGURED` calculado (evita que el
+  código intente subir algo con los placeholders puestos).
+- `media.js`, `recursos.js` y `certificados.js` ya no leen `configuracion/cloudinary`
+  de Firestore — importan directo del archivo. `obtenerConfigCloudinary()` dejó de ser
+  `async` en los tres (ya no hay round-trip a Firestore para esto).
+- Se quitó el formulario "cloudinary (certificados)" de `admin/dashboard.html` y su
+  manejador en `admin/dashboard.js` — ya no escribía a ningún lado que el código
+  leyera.
+- `docs/firestore.rules`: el comentario de `configuracion/{doc}` ahora aclara que solo
+  queda `donaciones` ahí (no fue necesario cambiar la regla en sí, `allow read: if true`
+  sigue siendo correcto solo para ese documento).
+- `docs/INSTALACION.md`, sección 5, y el checklist final, actualizados al nuevo flujo.
+
+**Trade-off a tener en cuenta**: con Firestore, el admin podía cambiar el Cloud
+name/preset sin volver a desplegar. Con el archivo estático, cambiarlos requiere editar
+`cloudinaryConfig.js` y volver a desplegar — igual que ya pasa con `firebase-config.js`.
+Es la misma consistencia que pidió el usuario, documentada aquí por si en el futuro se
+prefiere volver al esquema anterior.
+
+## 3.9 Corrección de fecha de App Check y aviso sobre modelo experimental (v18)
+
+Al revisar el `firebase-config.js` real que ya tenía el usuario configurado, se buscó el
+estado actual (septiembre 2026) de Firebase AI Logic y aparecieron dos cosas que corregir
+en la documentación, no en el código (el código ya estaba bien, solo advertía de forma
+genérica):
+
+- `docs/INSTALACION.md` decía que App Check era obligatorio "desde julio de 2026". Según
+  la documentación vigente de Firebase, la fecha real en que pasa a ser **obligatorio**
+  (no solo recomendado) es el **2 de noviembre de 2026**. Corregido.
+- Se reforzó la advertencia sobre `MODELO_GEMINI = "gemini-flash-latest"` en
+  `firebase-config.example.js`: es un alias experimental (lo dice la propia
+  documentación de Gemini), no apto para producción — el comentario ahora lo deja más
+  explícito y enlaza a la página de modelos vigentes.
+
 ## 3.8 Confirmación de correo, filtro de nombres y correcciones encontradas al implementarlas (v16)
 
 El usuario pidió dos reglas de negocio nuevas: que el estudiante confirme su cuenta
