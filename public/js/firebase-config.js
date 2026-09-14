@@ -44,7 +44,7 @@ export const db = getFirestore(app);
 //    Enterprise, cambia también aquí a ReCaptchaV3Provider, o las verificaciones
 //    fallarán en silencio aunque todo lo demás esté bien configurado.
 export const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider("TU_RECAPTCHA_ENTERPRISE_SITE_KEY"),
+  provider: new ReCaptchaEnterpriseProvider("6LfxX7stAAAAAJ-hXKix0tworSciD49qi3wl5BEB"),
   isTokenAutoRefreshEnabled: true
 });
 
