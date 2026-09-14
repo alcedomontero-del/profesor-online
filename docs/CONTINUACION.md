@@ -113,6 +113,128 @@ En su lugar se acordó lo siguiente:
     pero el código del panel y la lectura de `configuracion/sitio` en las páginas
     públicas aún no se construyó. Es el siguiente punto de roadmap (ver sección 3).
 
+## 3.7 Revisión general de seguridad y correcciones (v15)
+
+El usuario pidió una revisión general del código en busca de fallos, con prioridad en
+todo lo que pudiera comprometer la seguridad. Se encontraron y corrigieron:
+
+1. **XSS almacenado (crítico) en el panel admin**: `d.nombre` (elegido libremente por
+   cualquiera al registrarse) se insertaba sin escapar vía `innerHTML` en
+   `admin/dashboard.js` → cualquier persona podía registrarse con un nombre tipo
+   `<img src=x onerror=...>` y ejecutar JS en la sesión del ADMIN la próxima vez que
+   abriera el listado de estudiantes. Corregido con una función `escapeHtml()` aplicada
+   a `d.nombre` y, por defensa en profundidad, también a `respuestaIngeniero.detalle`.
+2. **Fuga del banco de respuestas correctas (crítico)**: `docs/firestore.rules` dejaba
+   `plantillas_clase`/`plantillas_evaluacion` con `allow read: if request.auth != null`.
+   Cualquier estudiante autenticado podía, desde la consola del navegador, leer la
+   colección completa — incluida `respuestaCorrectaIndex` de TODOS los quizzes ya
+   generados, no solo del que estuviera resolviendo. Corregido a `allow read: if
+   esAdmin()` en ambas colecciones (solo el navegador del admin necesita leerlas).
+3. **Reutilización de plantillas por substring**: `buscarPlantilla()` podía confundir
+   "CSS" con "CSS Grid" (coincidencia por `.includes()` en ambos sentidos). Ahora exige
+   coincidencia EXACTA del texto normalizado, consultando con `where("temaNormalizado",
+   "==", ...)` en vez de traer la colección completa — corrige el falso positivo Y el
+   costo creciente de lecturas de Firestore en el mismo cambio.
+4. **Firebase App Check nunca se escribió en código**, solo se documentaba en
+   `INSTALACION.md`. Se agregó la inicialización real (`initializeAppCheck` +
+   `ReCaptchaV3Provider`) en `firebase-config.example.js`, con instrucciones inline de
+   qué reemplazar antes de desplegar.
+5. **Estado `"alternativa"` del contrato Profesor↔Ingeniero**: estaba documentado pero
+   `agente-profesor.js` trataba cualquier estado distinto de `"aceptado"` como escalado,
+   descartando un `"alternativa"` con contenido válido. Ahora `solicitarClase`/
+   `solicitarQuiz` aceptan y guardan tanto `"aceptado"` como `"alternativa"` (siempre que
+   traiga `resultado`); solo `"rechazado"` sigue consumiendo rondas de negociación.
+6. **`docs/contrato-agentes.md` no incluía `"clase"`** en la lista de tipos permitidos,
+   aunque el código (`TIPOS_PERMITIDOS`) sí la soporta desde v9. Sincronizado.
+
+**Nueva regla de negocio pedida en esta sesión**: el registro de estudiantes ahora exige
+correo `@gmail.com` o `@outlook.com`. Se aplicó en dos capas:
+- `auth.js` (cliente): valida el dominio antes de llamar a `createUserWithEmailAndPassword`
+  y muestra un error claro si no cumple. Esto es solo para dar buen feedback — un cliente
+  modificado podría saltárselo.
+- `docs/firestore.rules` (real protección): la función `correoPermitido()` exige que
+  `email` termine en uno de esos dos dominios para poder **crear** el documento
+  `usuarios/{uid}` propio. Esto SÍ protege de verdad porque corre en el servidor de
+  Firestore — un cliente modificado no puede saltárselo. La cuenta de Firebase
+  Authentication en sí podría llegar a crearse igual con otro correo si alguien llama a
+  la API directamente sin pasar por el formulario, pero sin el documento en `usuarios/`
+  esa cuenta no puede usar la app (todas las pantallas dependen de leer ese documento).
+  El admin (regla `allow write: if esAdmin()`) no tiene esta restricción, por si necesita
+  crear/editar manualmente un usuario con otro correo.
+
+**No se tocó** (documentado como limitación aceptada, sin backend no tiene arreglo
+completo): la calificación sigue corriendo del lado del cliente — ver sección 3.2, sigue
+vigente igual que antes de esta revisión.
+
+## 3.8 Confirmación de correo, filtro de nombres y correcciones encontradas al implementarlas (v16)
+
+El usuario pidió dos reglas de negocio nuevas: que el estudiante confirme su cuenta
+desde el correo antes de poder usarla, y un filtro de nombres (reservados + ofensivos)
+al registrarse. Al revisar el código real para implementarlas (no solo lo que decía la
+sección 3.7 de la entrega anterior) aparecieron dos correcciones adicionales.
+
+**1) Confirmación de correo**
+- `auth.js`: al registrarse se llama a `sendEmailVerification()` justo después de crear
+  la cuenta. **No** se cierra la sesión de inmediato (a diferencia de lo planteado
+  inicialmente en el chat) — se mantiene abierta solo para que el botón "Reenviar
+  correo" tenga un `auth.currentUser` válido; el estudiante sigue sin poder llegar al
+  dashboard porque no se le redirige y las pantallas protegidas lo bloquean igual (ver
+  siguiente punto).
+- En "Entrar", si `cred.user.emailVerified` es `false`, no se redirige al dashboard: se
+  muestra el panel "confirma tu correo" (mismo panel que tras registrarse) con botón de
+  reenviar.
+- Nuevo módulo `js/verificacion-correo.js` (`exigirCorreoVerificado()`), integrado en
+  los 4 puntos de entrada que ya verificaban rol: `admin/dashboard.js`, `admin/chat.js`,
+  `admin/chat-ingeniero.js` y `estudiante/dashboard.js`. Si alguien llega directo a una
+  de esas URLs autenticado pero sin correo verificado, se cierra la sesión (para que
+  quede fuera de verdad) y se le redirige a `index.html?verificar=1`, que muestra un
+  aviso en la pestaña "Entrar" pidiéndole iniciar sesión de nuevo (ahí sí puede
+  reenviar, porque esa sesión sí queda activa).
+- `docs/firestore.rules`: `usuarios/{uid}` ahora exige `correoVerificado()` (claim
+  `request.auth.token.email_verified`) para el `allow update` del propio dueño — un
+  estudiante sin correo confirmado no puede escribir ni su propio `progreso` aunque
+  escriba directo a Firestore saltándose la app. El admin (`allow write`) no tiene esta
+  restricción.
+- **Actualización (mismo día, a pedido del usuario)**: se cerró también
+  `resultados/{resultadoId}` — `allow create` ahora exige `correoVerificado()` además
+  de `request.auth.uid == uid`, mismo patrón que `usuarios/{uid}`. Ya no queda ninguna
+  colección donde un estudiante sin correo confirmado pueda escribir algo propio.
+
+**2) Filtro de nombres**
+- Nuevo módulo `js/filtro-nombres.js` (`nombrePermitido()`): bloquea nombres reservados
+  que podrían suplantar un rol del sistema (`admin`, `profesor`, `soporte`, etc.) y una
+  lista base de palabras ofensivas comunes en español — sin insultos graves ni términos
+  discriminatorios, es un filtro básico, no un sistema de moderación completo.
+- Aplicado en `auth.js` (mensaje de error claro) y reforzado con la misma lista en
+  `docs/firestore.rules` (`nombrePermitido()`, usada en el `allow create` de
+  `usuarios/{uid}`) — la del cliente no protege por sí sola.
+
+**3) Hallazgo adicional: escape incompleto en el campo "notas" del perfil de enseñanza**
+- `admin/dashboard.js` insertaba `estilo.notas` en un atributo `value="..."` con un
+  escape casero que solo reemplazaba comillas dobles (`.replace(/"/g, "&quot;")`).
+  Ese campo lo puede escribir el propio estudiante directo en Firestore (las reglas
+  permiten que el dueño edite su `progreso`, y `estiloEnsenanza.notas` vive ahí),
+  saltándose la UI que en teoría solo lo deja editar al admin. Se reemplazó por
+  `escapeAtributo()`, que escapa `&`, `"`, `<`, `>` y `'` en ese orden — el escape
+  genérico `escapeHtml()` que ya existía (pensado para `innerHTML` de texto) no sirve
+  aquí porque no escapa comillas, que es justo el carácter que importa dentro de un
+  atributo.
+
+**4) Hallazgo adicional: `.oculto` solo ocultaba formularios, no paneles**
+- La regla CSS era `.form-acceso.oculto{ display:none; }`. Los paneles
+  `#panel-clase`/`#panel-quiz` del dashboard del estudiante (y su equivalente en
+  `prueba-local/estudiante.html`) usan la clase `acceso-panel oculto`, no
+  `form-acceso oculto`, así que esa regla nunca les aplicaba: quedaban visibles y
+  vacíos desde que cargaba la página, aunque el JS les agregara la clase `oculto`
+  esperando ocultarlos. Se generalizó a `.oculto{ display:none; }`, que también es la
+  que ahora usa el nuevo panel `#panel-verificar` en `index.html`.
+
+**Corrección a la sección 3.7**: el punto 6 de esa sección decía que
+`docs/contrato-agentes.md` ya incluía `"clase"` como tipo permitido ("Sincronizado").
+Al revisar el código real de esta entrega, la línea del ejemplo JSON (línea 17) seguía
+sin incluirlo — quedó corregida ahora. Queda como recordatorio de por qué esta sección
+siempre revisa el código real y no solo confía en la entrega anterior.
+
 ## 3. Qué falta por resolver / construir (roadmap)
 
 Marca con [x] lo que ya esté hecho en el ZIP actual.

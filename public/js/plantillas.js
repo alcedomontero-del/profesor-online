@@ -24,26 +24,30 @@ function normalizar(texto) {
 }
 
 /**
- * Busca una plantilla ya existente para este tipo + tema. Coincidencia por texto
- * normalizado exacto o por contención (para no exigir el mismo texto letra por letra).
- * Devuelve la plantilla más usada si hay varias parecidas, o null si no hay ninguna.
+ * Busca una plantilla ya existente para este tipo + tema EXACTO (normalizado).
+ * Antes esto comparaba por "contención" (pNorm.includes(temaNorm) o viceversa) y
+ * traía la colección completa con getDocs() sin filtro — dos problemas reales:
+ * 1) un tema nuevo como "CSS Grid" podía reutilizar por error la plantilla de "CSS"
+ *    a secas (o viceversa), porque uno contiene al otro como substring;
+ * 2) el costo en lecturas de Firestore crecía sin límite con cada plantilla nueva
+ *    acumulada, justo lo opuesto a la meta de ahorrar con el tiempo.
+ * Ahora se exige coincidencia exacta del texto normalizado y se consulta con
+ * `where` (Firestore solo lee los documentos que calzan, no la colección entera).
+ * Costo: menos reutilización automática para frases parecidas pero no idénticas
+ * (ej. "css" y "css grid" ya NO comparten plantilla) — es el trade-off correcto:
+ * mejor generar de más una vez que enseñar contenido equivocado por una coincidencia
+ * de texto casual.
  */
 export async function buscarPlantilla(tipo, tema) {
   const nombreColeccion = COLECCION[tipo];
   if (!nombreColeccion) return null;
 
-  const snap = await getDocs(collection(db, nombreColeccion));
+  const temaNorm = normalizar(tema);
+  const q = query(collection(db, nombreColeccion), where("temaNormalizado", "==", temaNorm));
+  const snap = await getDocs(q);
   if (snap.empty) return null;
 
-  const temaNorm = normalizar(tema);
-  const candidatas = snap.docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((p) => {
-      const pNorm = normalizar(p.tema || "");
-      return pNorm === temaNorm || pNorm.includes(temaNorm) || temaNorm.includes(pNorm);
-    });
-
-  if (candidatas.length === 0) return null;
+  const candidatas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   candidatas.sort((a, b) => (b.usos || 0) - (a.usos || 0));
   return candidatas[0];
 }
@@ -55,6 +59,7 @@ export async function guardarPlantilla(tipo, tema, moduloOrigenId, resultado) {
 
   const ref = await addDoc(collection(db, nombreColeccion), {
     tema,
+    temaNormalizado: normalizar(tema), // usado por buscarPlantilla() para la consulta exacta
     moduloOrigenId,
     resultado,
     usos: 1,

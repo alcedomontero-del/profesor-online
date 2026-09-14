@@ -2,8 +2,12 @@
 
 ## `usuarios/{uid}`
 ```
-nombre: string
-email: string
+nombre: string                   // filtrado al registrarse: sin nombres reservados del
+                                  // sistema (admin, profesor, soporte...) ni palabras
+                                  // ofensivas comunes (validado en auth.js Y en
+                                  // firestore.rules — función nombrePermitido())
+email: string                    // debe terminar en @gmail.com o @outlook.com (validado
+                                  // en auth.js Y en firestore.rules al crear el documento)
 rol: "estudiante" | "admin"
 suscripcion: {
   estado: "activa" | "inactiva" | "pausada"
@@ -15,12 +19,17 @@ progreso: {
   capacitado: boolean            // lo decide el Profesor según reglas
   estiloEnsenanza: {              // cómo decidió el Profesor enseñarle A ESTE estudiante
     ritmo: "estandar" | "lento" | "acelerado"
-    notas: string
+    notas: string                // se renderiza en admin/dashboard.js con escapeAtributo()
     actualizadoEn: timestamp
   }
 }
 creadoEn: timestamp
 ```
+El estudiante solo puede modificar su propio documento (incluido `progreso`) si su
+correo está confirmado — `request.auth.token.email_verified == true` en
+`firestore.rules` — además de no poder tocar `suscripcion` ni `rol`. La confirmación de
+correo (`sendEmailVerification` / `emailVerified`) la maneja Firebase Authentication
+directamente y no se guarda como campo aparte en este documento.
 
 ## `modulos/{moduloId}`
 ```
@@ -93,12 +102,17 @@ Contenido ya generado y aceptado por el Ingeniero, guardado para REUTILIZAR en v
 regenerar desde cero cada vez que el mismo tema se repite (otro módulo, otro estudiante).
 Ver `public/js/plantillas.js`.
 ```
-tema: string                     // texto libre, se compara normalizado (sin acentos/mayúsculas)
+tema: string                     // texto original, tal cual lo escribió el Profesor/admin
+temaNormalizado: string          // normalizado (sin acentos/mayúsculas) — es el campo por
+                                  // el que se consulta con `where` en buscarPlantilla();
+                                  // requiere coincidencia EXACTA, ya no por substring
 moduloOrigenId: string           // en qué módulo se generó por primera vez
 resultado: object                // el mismo JSON que devuelve el Ingeniero (clase o quiz)
 usos: number                     // cuántas veces se ha reutilizado (prioriza la más probada)
 creadaEn: timestamp
 ```
+Solo el admin puede leer estas dos colecciones (`plantillas_evaluacion` guarda la
+respuesta correcta de cada pregunta, igual que `evaluaciones`).
 El Profesor busca por tema antes de negociar con el Ingeniero (`buscarPlantilla`); si
 encuentra una y el perfil del estudiante no pide algo distinto (`estiloEnsenanza`), la
 reutiliza directamente. Si el perfil sí pide algo distinto, se le pasa al Ingeniero como

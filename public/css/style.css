@@ -91,7 +91,12 @@ body{
 }
 
 .form-acceso{ display:flex; flex-direction:column; gap: 1.1rem; }
-.form-acceso.oculto{ display:none; }
+/* Regla genérica: antes era `.form-acceso.oculto`, así que solo ocultaba
+ * formularios. Paneles como #panel-clase / #panel-quiz (clase "acceso-panel
+ * oculto") o el aviso de "reenviar correo" nunca coincidían con esa regla y
+ * quedaban visibles vacíos desde que cargaba la página, aunque el JS les
+ * pusiera la clase "oculto". Se generaliza para que oculte cualquier elemento. */
+.oculto{ display:none; }
 
 .form-acceso label{
   display:flex;
@@ -132,6 +137,13 @@ body{
   color: #E8703D;
   font-size: 0.85rem;
   margin: -0.4rem 0 0;
+  min-height: 1em;
+}
+
+.aviso{
+  color: var(--verde-terminal);
+  font-size: 0.85rem;
+  margin: 0 0 0.8rem;
   min-height: 1em;
 }
 

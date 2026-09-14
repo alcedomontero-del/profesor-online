@@ -60,9 +60,14 @@ export async function solicitarClase(moduloId, tema, perfilEstudiante = null) {
     solicitud.ronda = ronda;
     respuesta = await procesarSolicitud(solicitud);
     ronda++;
+    // "alternativa" significa que el Ingeniero SÍ generó algo, pero distinto a lo
+    // pedido textualmente — se acepta igual que "aceptado" (por eso no sigue el
+    // bucle); solo "rechazado" consume otra ronda. Antes esto no se distinguía y
+    // una "alternativa" con resultado válido se descartaba igual que un rechazo.
   } while (respuesta.estado === "rechazado" && ronda <= MAX_RONDAS);
 
-  const escalado = respuesta.estado !== "aceptado";
+  const exito = (respuesta.estado === "aceptado" || respuesta.estado === "alternativa") && respuesta.resultado;
+  const escalado = !exito;
 
   await addDoc(collection(db, "solicitudes_agente"), {
     solicitud,
@@ -152,7 +157,8 @@ export async function solicitarQuiz(moduloId, propositoPedagogico, perfilEstudia
     ronda++;
   } while (respuesta.estado === "rechazado" && ronda <= MAX_RONDAS);
 
-  const escalado = respuesta.estado !== "aceptado";
+  const exito = (respuesta.estado === "aceptado" || respuesta.estado === "alternativa") && respuesta.resultado;
+  const escalado = !exito;
 
   await addDoc(collection(db, "solicitudes_agente"), {
     solicitud,

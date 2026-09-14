@@ -3,12 +3,14 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/fi
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 import { crearChatIngeniero, enviarMensajeIngeniero } from "../js/chat-ingeniero.js";
 import { subirRecurso, listarRecursos } from "../js/recursos.js";
+import { exigirCorreoVerificado } from "../js/verificacion-correo.js";
 
 let chat = null;
 const historialEl = document.getElementById("chat-historial");
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = "../index.html"; return; }
+  if (await exigirCorreoVerificado(auth, user)) return;
   const snap = await getDoc(doc(db, "usuarios", user.uid));
   if (!snap.exists() || snap.data().rol !== "admin") {
     window.location.href = "../index.html";

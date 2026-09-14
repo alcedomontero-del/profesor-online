@@ -49,7 +49,15 @@ un admin, a propósito, por seguridad. Para tener un admin:
    tu correo real.
 2. En Firebase Console → Firestore → colección `usuarios` → busca tu documento (el ID es
    tu UID de Authentication) → edita el campo `rol` de `"estudiante"` a `"admin"`.
-3. Vuelve a iniciar sesión para que el cambio tome efecto.
+3. **Confirma tu correo antes de intentar entrar** (desde v16, esto aplica a cualquier
+   cuenta, admin incluido — el chequeo de `emailVerified` no distingue roles). Al
+   registrarte te llega un correo de confirmación normal; ábrelo y haz clic en el
+   enlace. Si prefieres saltarte ese paso para tu propia cuenta de admin, puedes marcar
+   el correo como verificado a mano desde Firebase Console → Authentication → busca tu
+   usuario →⋮ → "Marcar correo electrónico como verificado" — pero sin uno de los dos
+   pasos (confirmar o marcarlo a mano), el login te dejará atascado en la pantalla
+   "confirma tu correo" aunque ya seas admin en Firestore.
+4. Vuelve a iniciar sesión para que el cambio de rol tome efecto.
 
 ## 5. Configurar Cloudinary (certificados, media de clases, recursos de los agentes)
 1. Crea una cuenta en [Cloudinary](https://cloudinary.com) → copia tu **Cloud name**
@@ -88,13 +96,15 @@ versión preview) — lo que falta es la configuración del lado de Firebase Con
    - Firebase Console → **Compilación → App Check** → registra tu app web.
    - Para producción (el sitio ya en tu dominio de Hosting): elige **reCAPTCHA
      Enterprise** o **reCAPTCHA v3** como proveedor, sigue el asistente para generar la
-     site key, y agrégala a la inicialización de App Check en `firebase-config.js`
-     (`import { initializeAppCheck, ReCaptchaV3Provider } from ".../firebase-app-check.js"`
-     — este bloque no viene aún en el scaffold, agrégalo en este paso siguiendo el
-     asistente de Firebase Console, que te da el snippet exacto para tu proyecto).
-   - Para desarrollo local (antes de desplegar, probando en tu máquina): activa el
-     **modo debug de App Check** y usa el token de depuración que te da la consola, para
-     no tener que pasar por reCAPTCHA mientras programas.
+     site key. El bloque de inicialización **ya viene incluido** en
+     `firebase-config.example.js` (`initializeAppCheck` + `ReCaptchaV3Provider`) — solo
+     reemplaza el placeholder `"TU_RECAPTCHA_V3_SITE_KEY"` por la site key real que te
+     da el asistente.
+   - Para desarrollo local (antes de desplegar, probando en tu máquina): descomenta la
+     línea `self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;` que ya está en el archivo
+     (comentada, justo arriba del bloque de App Check) y pega el token que te da la
+     consola del navegador en Firebase Console → App Check → tu app → "Manage debug
+     tokens", para no tener que pasar por reCAPTCHA mientras programas.
    - Sin este paso, es la causa más común de "todo se ve bien pero el chat no responde"
      una vez que subes el sitio a un dominio público.
 
@@ -153,7 +163,9 @@ Notas:
 ## 10. Checklist final antes de dar por "funcional" el sitio en línea
 - [ ] `firebase-config.js` con credenciales reales, commiteado y desplegado.
 - [ ] Reglas de `docs/firestore.rules` publicadas (paso 3).
-- [ ] Tu usuario admin creado y con `rol: "admin"` en Firestore (paso 4).
+- [ ] Tu usuario admin creado, con `rol: "admin"` en Firestore Y con el correo
+      confirmado o marcado como verificado a mano (paso 4) — sin esto, el login se
+      queda atascado en "confirma tu correo" aunque el rol ya sea admin.
 - [ ] Cloudinary configurado desde el panel admin (paso 5).
 - [ ] AI Logic con proveedor Gemini Developer API, modelo concreto fijado (no el alias
       por defecto sin verificar), y **App Check activo** (paso 6).

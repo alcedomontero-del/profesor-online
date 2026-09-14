@@ -1,6 +1,7 @@
 # Contrato de negociación Profesor ↔ Ingeniero
 
 ## Tipos de herramienta que el Profesor puede solicitar (alcance permitido)
+- `clase`: contenido completo de una clase (explicación, ejemplos, puntos clave).
 - `quiz`: banco de preguntas de selección múltiple para un módulo.
 - `reto_codigo_autoevaluado`: reto con enunciado y rúbrica evaluada por el propio LLM
   (sin ejecución real de código en v1).
@@ -13,7 +14,7 @@ automáticamente antes de llegar al Ingeniero, con motivo "fuera de alcance perm
 ## Formato de solicitud (Profesor → Ingeniero)
 ```json
 {
-  "tipo": "quiz | reto_codigo_autoevaluado | rubrica | caso_practico",
+  "tipo": "clase | quiz | reto_codigo_autoevaluado | rubrica | caso_practico",
   "moduloId": "string",
   "propositoPedagogico": "qué se quiere lograr / evaluar",
   "formatoEsperado": "descripción del resultado esperado",

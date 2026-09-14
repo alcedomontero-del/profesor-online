@@ -12,19 +12,56 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    function correoPermitido(email) {
+      // Solo Gmail u Outlook. Esto es lo que de verdad protege la regla de negocio —
+      // la validación en auth.js (cliente) es solo para dar un mensaje de error claro;
+      // un cliente modificado podría saltársela, pero no puede saltarse esto porque
+      // corre en el servidor de Firestore.
+      return email is string && email.matches('.*@(gmail\\.com|outlook\\.com)$');
+    }
+
+    function nombrePermitido(nombre) {
+      // Mismo filtro que public/js/filtro-nombres.js (reservados + palabras
+      // ofensivas comunes, sin insultos graves ni discriminatorios). Esta es
+      // la capa que de verdad protege — la del cliente es solo para dar un
+      // mensaje de error claro; un cliente modificado podría saltársela.
+      return nombre is string && nombre.size() > 0 &&
+        !nombre.lower().matches(
+          '.*(admin|administrador|administradora|moderador|moderadora|moderator|' +
+          'soporte|support|profesor|profesora|teacher|ingeniero|ingeniera|sistema|' +
+          'root|superuser|academia|staff|puta|puto|putos|putas|mierda|cabron|cabrona|' +
+          'pendejo|pendeja|gilipollas|joder|marica|maricon|hijueputa|hijodeputa|' +
+          'verga|gonorrea|malparido|malparida).*'
+        );
+    }
+
+    function correoVerificado() {
+      // Firebase incluye "email_verified" como claim estándar del ID token.
+      return request.auth.token.email_verified == true;
+    }
+
     match /usuarios/{uid} {
       allow read: if esDueno(uid) || esAdmin();
       // el estudiante puede editar su propio perfil y su "progreso" (lo actualiza el
       // agente Profesor corriendo en su navegador tras calificar un intento), pero
-      // NUNCA su "suscripcion" ni su "rol" — esos solo los toca el admin.
+      // NUNCA su "suscripcion" ni su "rol" — esos solo los toca el admin. Además,
+      // desde que existe la confirmación de correo, un estudiante sin el correo
+      // verificado no puede escribir nada en su propio documento (ni siquiera su
+      // progreso) aunque intente saltarse la app y escribir directo a Firestore.
       // LIMITACIÓN CONOCIDA: al no haber backend propio, un cliente modificado podría
       // escribir un "progreso.capacitado" falso. Ver docs/CONTINUACION.md, sección
       // "Limitaciones de seguridad conocidas", para la solución futura (Cloud Function).
-      allow update: if esDueno(uid) &&
+      allow update: if esDueno(uid) && correoVerificado() &&
         request.resource.data.suscripcion == resource.data.suscripcion &&
         request.resource.data.rol == resource.data.rol;
       allow write: if esAdmin();
-      allow create: if esDueno(uid);
+      // El registro (create) solo se permite con correo @gmail.com o @outlook.com,
+      // en minúsculas, y con un nombre que pase el filtro de nombrePermitido().
+      // El admin (allow write arriba) no tiene esta restricción, por si necesita
+      // crear/editar un usuario manualmente con otro correo o nombre.
+      allow create: if esDueno(uid) &&
+        correoPermitido(request.resource.data.email) &&
+        nombrePermitido(request.resource.data.nombre);
     }
 
     match /modulos/{moduloId} {
@@ -44,7 +81,12 @@ service cloud.firestore {
     match /resultados/{resultadoId} {
       allow read: if esAdmin() ||
         (request.auth != null && resource.data.uid == request.auth.uid);
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // Igual que en usuarios/{uid}: un estudiante sin correo confirmado no puede
+      // crear un resultado de quiz aunque escriba directo a Firestore saltándose la
+      // app. Antes solo se exigía "request.auth != null", dejando esta puerta abierta
+      // aunque la de "progreso" (usuarios/{uid}) ya estuviera cerrada.
+      allow create: if request.auth != null && correoVerificado() &&
+        request.resource.data.uid == request.auth.uid;
       allow update, delete: if esAdmin();
     }
 
@@ -65,12 +107,24 @@ service cloud.firestore {
     }
 
     match /plantillas_clase/{id} {
-      allow read: if request.auth != null; // el agente Profesor las lee desde el navegador del admin
+      // Solo el navegador del admin llama a buscarPlantilla() (desde solicitarClase/
+      // solicitarQuiz, que solo se disparan desde el panel/chat admin) — ningún
+      // estudiante necesita leer esto directo. Antes era `if request.auth != null`,
+      // lo que permitía a cualquier estudiante consultar la colección completa.
+      allow read: if esAdmin();
       allow write: if esAdmin();
     }
 
     match /plantillas_evaluacion/{id} {
-      allow read: if request.auth != null;
+      // MISMO MOTIVO, PERO MÁS SENSIBLE: este documento guarda el `resultado`
+      // completo del quiz, incluida `respuestaCorrectaIndex`. Con la regla anterior
+      // (`if request.auth != null`), cualquier estudiante autenticado podía llamar
+      // getDocs() sobre esta colección desde la consola del navegador y leer las
+      // respuestas correctas de TODOS los quizzes ya generados, sin necesitar
+      // modificar el cliente ni explotar nada — no era solo la limitación conocida
+      // de "inspeccionar la evaluación puntual que está resolviendo" (sección 3.2),
+      // sino el banco de respuestas completo de golpe.
+      allow read: if esAdmin();
       allow write: if esAdmin();
     }
 

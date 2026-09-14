@@ -2,6 +2,7 @@ import { auth, db } from "../js/firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 import { calificarIntento, prepararPreguntasParaEstudiante } from "../js/agente-profesor.js";
+import { exigirCorreoVerificado } from "../js/verificacion-correo.js";
 
 let uidActual = null;
 
@@ -10,6 +11,7 @@ onAuthStateChanged(auth, async (user) => {
     window.location.href = "../index.html";
     return;
   }
+  if (await exigirCorreoVerificado(auth, user)) return;
   uidActual = user.uid;
 
   const snap = await getDoc(doc(db, "usuarios", user.uid));

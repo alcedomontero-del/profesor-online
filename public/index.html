@@ -50,6 +50,25 @@
         <p class="error" id="error-registro"></p>
         <button type="submit" class="btn-primario">Crear cuenta</button>
       </form>
+
+      <!-- Se muestra en vez de los formularios cuando: (a) alguien acaba de
+           registrarse y falta confirmar el correo, o (b) alguien inicia
+           sesión con una cuenta sin confirmar. El botón "reenviar" necesita
+           una sesión activa, así que solo aparece en estos dos casos; si
+           alguien llega aquí redirigido desde una pantalla protegida (ver
+           js/verificacion-correo.js), la sesión ya se cerró antes del
+           redirect y en su lugar se muestra un aviso en la pestaña "Entrar"
+           pidiéndole iniciar sesión de nuevo. -->
+      <div id="panel-verificar" class="oculto">
+        <p class="acceso-eyebrow" style="margin-bottom:0.6rem;">confirma tu correo</p>
+        <p class="acceso-sub" id="texto-verificar" style="margin:0 0 1rem;">
+          Te enviamos un correo de confirmación. Ábrelo y confirma tu cuenta
+          antes de continuar.
+        </p>
+        <p class="aviso" id="aviso-verificar"></p>
+        <button type="button" class="btn-primario" id="btn-reenviar-correo">Reenviar correo</button>
+        <button type="button" class="btn-secundario" id="btn-otra-cuenta" style="margin-top:0.6rem;">Usar otra cuenta</button>
+      </div>
     </div>
   </main>
 

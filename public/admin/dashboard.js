@@ -6,11 +6,36 @@ import {
 import { solicitarQuiz, solicitarClase, actualizarPerfilEnsenanza } from "../js/agente-profesor.js";
 import { generarCertificado } from "../js/certificados.js";
 import { adjuntarMediaAClase } from "../js/media.js";
+import { exigirCorreoVerificado } from "../js/verificacion-correo.js";
 
 let uidAdmin = null;
 
+/** Escapa HTML antes de insertar texto de origen no confiable (ej. nombre del
+ * estudiante, que él mismo eligió al registrarse) con innerHTML. Sin esto, un
+ * nombre tipo `<img src=x onerror=...>` ejecutaría JS en la sesión del admin. */
+function escapeHtml(texto) {
+  const div = document.createElement("div");
+  div.textContent = texto ?? "";
+  return div.innerHTML;
+}
+
+/** Escapa texto de origen no confiable para insertarlo dentro de un atributo
+ * HTML entre comillas dobles (ej. value="..."). A diferencia de escapeHtml()
+ * de arriba (pensado para contenido de texto vía innerHTML), aquí SÍ importa
+ * escapar la comilla doble — es el único carácter que le permitiría a alguien
+ * "salirse" del atributo e inyectar otro atributo o una etiqueta nueva. */
+function escapeAtributo(texto) {
+  return String(texto ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/'/g, "&#39;");
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = "../index.html"; return; }
+  if (await exigirCorreoVerificado(auth, user)) return;
   const snap = await getDoc(doc(db, "usuarios", user.uid));
   if (!snap.exists() || snap.data().rol !== "admin") {
     window.location.href = "../index.html"; // no es admin, fuera
@@ -149,7 +174,7 @@ async function cargarSolicitudes() {
           <span style="color:var(--texto-tenue);"> · ronda ${s.ronda}</span>
         </div>
         <div style="color:var(--texto-tenue); font-size:0.8rem;">
-          ${s.respuestaIngeniero?.detalle || ""}
+          ${escapeHtml(s.respuestaIngeniero?.detalle || "")}
         </div>
       </div>
     `;
@@ -179,7 +204,7 @@ async function cargarEstudiantes() {
     fila.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
         <span>
-          ${d.nombre || "(sin nombre)"}
+          ${escapeHtml(d.nombre) || "(sin nombre)"}
           <span style="color:var(--texto-tenue); font-size:0.8rem;">
             — ${Math.round(promedio * 100)}% · ${d.suscripcion?.estado || "sin estado"}
             ${capacitado ? " · capacitado" : ""}
@@ -207,7 +232,7 @@ async function cargarEstudiantes() {
           </select>
         </label>
         <label style="font-size:0.85rem;">Notas para el Profesor
-          <input type="text" class="input-notas" value="${(estilo.notas || "").replace(/"/g, "&quot;")}"
+          <input type="text" class="input-notas" value="${escapeAtributo(estilo.notas || "")}"
             placeholder="ej. le cuesta CSS, reforzar con más ejemplos visuales" style="width:100%; margin-top:0.2rem;">
         </label>
         <button class="btn-primario btn-guardar-perfil" style="align-self:flex-start; padding:0.4rem 0.9rem;">Guardar</button>
