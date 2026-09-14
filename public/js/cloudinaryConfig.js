@@ -6,9 +6,9 @@
 // para el paso a paso completo (crear cuenta, crear el "upload preset" sin firmar y
 // copiar aquí el cloud name).
 
-export const CLOUDINARY_CLOUD_NAME = "kv4gbmx0";
-export const CLOUDINARY_UPLOAD_PRESET = "profesor-online";
+export const CLOUDINARY_CLOUD_NAME = "TU-CLOUD-NAME";
+export const CLOUDINARY_UPLOAD_PRESET = "TU-UPLOAD-PRESET";
 
 export const CLOUDINARY_CONFIGURED =
-  CLOUDINARY_CLOUD_NAME !== "kv4gbmx0" &&
-  CLOUDINARY_UPLOAD_PRESET !== "profesor-online";
+  CLOUDINARY_CLOUD_NAME !== "TU-CLOUD-NAME" &&
+  CLOUDINARY_UPLOAD_PRESET !== "TU-UPLOAD-PRESET";

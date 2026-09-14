@@ -1,0 +1,16 @@
+[build]
+  # Sin build step real (HTML/CSS/JS puro). El comando solo borra la carpeta de
+  # pruebas antes de publicar, para que NUNCA quede accesible en el dominio público
+  # (esa carpeta permite entrar como "admin" sin autenticación real — ver
+  # docs/CONTINUACION.md sección 3.0).
+  command = "rm -rf public/prueba-local"
+  publish = "public"
+
+# Cabeceras básicas de seguridad. No sustituyen las Reglas de Firestore (la
+# seguridad real de los datos), pero son buena práctica para cualquier sitio estático.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

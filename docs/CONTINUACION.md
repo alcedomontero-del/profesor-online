@@ -166,6 +166,33 @@ correo `@gmail.com` o `@outlook.com`. Se aplicó en dos capas:
 completo): la calificación sigue corriendo del lado del cliente — ver sección 3.2, sigue
 vigente igual que antes de esta revisión.
 
+## 3.12 Migración real de hosting a Netlify (v21)
+
+Se aplicó la migración que quedó decidida (pero no implementada) en la sección 2.2:
+
+- `firebase.json` perdió la sección `hosting`; ahora solo declara
+  `firestore.rules` — se sigue usando con `firebase deploy --only firestore:rules`
+  (paso 3 de `docs/INSTALACION.md`), nunca con `--only hosting`.
+- Se agregó `netlify.toml` en la raíz: `publish = "public"`, y un `command =
+  "rm -rf public/prueba-local"` que borra esa carpeta en cada build de Netlify — es el
+  reemplazo funcional del `"ignore": ["prueba-local/**"]` que antes vivía en
+  `firebase.json`, pero más estricto (la carpeta ni siquiera se sube, no solo se ignora
+  al servir). También agrega cabeceras de seguridad básicas
+  (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`).
+- `docs/INSTALACION.md` reescrito: el paso 7 ahora es "conectar el repo en Netlify"
+  (Import project → build command / publish directory detectados desde
+  `netlify.toml`) en vez de `firebase deploy --only hosting`; el paso 6 (App Check) y el
+  checklist final ahora dicen explícitamente que el dominio a registrar en "Authorized
+  domains" de Authentication y en App Check es el de **Netlify**, no uno de Firebase.
+- **Pendiente de que lo haga el usuario, no de código**: crear la cuenta de Netlify,
+  conectar el repo real, y — una vez tenga el dominio `.netlify.app` definitivo —
+  agregarlo en Firebase Authentication → Authorized domains y regenerar/confirmar la
+  site key de reCAPTCHA en App Check para ese dominio. Sin ese paso manual, el login y
+  el chat de los agentes seguirán fallando en producción aunque el deploy de Netlify
+  "se vea bien".
+- No se tocó nada de Authentication, Firestore ni AI Logic — como estaba decidido, ese
+  backend no cambia con la migración de hosting.
+
 ## 3.11 Cierre de preparación para producción real: modelo Gemini estable fijado (v20)
 
 El usuario pidió confirmar que el proyecto quedara listo para un despliegue real, no
@@ -359,8 +386,9 @@ Marca con [x] lo que ya esté hecho en el ZIP actual.
       (`adjuntarMediaAClase`), formulario en panel admin ("adjuntar a la clase",
       usa la misma config de Cloudinary que los certificados). El admin debe copiar
       el ID de clase que se muestra al generarla para adjuntarle media después.
-- [ ] Migrar `docs/INSTALACION.md` / `firebase.json` para reflejar hosting en Netlify
-      en vez de Firebase Hosting (ver decisión completa en sección 2.2).
+- [x] Migrar `docs/INSTALACION.md` / `firebase.json` para reflejar hosting en Netlify
+      en vez de Firebase Hosting (ver decisión completa en sección 2.2) — hecho en v21,
+      ver sección 3.12.
 - [ ] Panel de configuración del sitio en `admin/dashboard.html`: nombre de la página,
       anuncios, pie de página — guardado en `configuracion/sitio` de Firestore, leído
       por las páginas públicas (ver sección 2.2). Reemplaza la idea descartada de un

@@ -1,16 +1,21 @@
 # Guía de instalación y despliegue
 
-> Objetivo de este documento: que la versión que subas a Git y despliegues a Firebase
-> Hosting quede **configurada y funcional desde el primer despliegue** — no solo que
-> "abra", sino que login, Firestore, Cloudinary y los agentes (Gemini vía Firebase AI
-> Logic) funcionen realmente en el dominio público. Sigue los pasos en orden.
+> Objetivo de este documento: que la versión que subas a Git y despliegues a **Netlify**
+> quede **configurada y funcional desde el primer despliegue** — no solo que "abra", sino
+> que login, Firestore, Cloudinary y los agentes (Gemini vía Firebase AI Logic) funcionen
+> realmente en el dominio público. Sigue los pasos en orden.
+>
+> **Reparto de roles:** Netlify sirve el sitio estático (HTML/CSS/JS). Firebase se usa
+> SOLO como backend — Authentication, Firestore y AI Logic (Gemini) — nunca como hosting.
 
 ## 0. Qué necesitas antes de empezar
 - Una cuenta de Google (para Firebase Console).
+- Una cuenta de Netlify (gratuita) — [netlify.com](https://www.netlify.com).
 - Una cuenta de Cloudinary (gratuita).
-- Node.js instalado en tu máquina (solo para el CLI de Firebase, no para el código de
-  la app — la app sigue siendo HTML/JS puro, sin build step).
-- Git y una cuenta de GitHub (o el hosting de repos que uses).
+- Node.js instalado en tu máquina, solo si quieres usar el CLI de Firebase para publicar
+  las reglas de Firestore (paso 3) — no lo necesitas para el código de la app ni para
+  Netlify; la app sigue siendo HTML/JS puro, sin build step.
+- Git y una cuenta de GitHub (Netlify despliega conectando tu repo directamente).
 
 ## 1. Crear el proyecto en Firebase
 1. Ve a [Firebase Console](https://console.firebase.google.com) → **Agregar proyecto**.
@@ -103,12 +108,25 @@ versión preview) — lo que falta es la configuración del lado de Firebase Con
    recomendado, pero pasa a ser obligatorio ese día). Sin esto, el chat del Profesor y
    del Ingeniero fallarán silenciosamente aunque todo lo demás esté bien configurado:
    - Firebase Console → **Compilación → App Check** → registra tu app web.
-   - Para producción (el sitio ya en tu dominio de Hosting): elige **reCAPTCHA
-     Enterprise** o **reCAPTCHA v3** como proveedor, sigue el asistente para generar la
-     site key. El bloque de inicialización **ya viene incluido** en
-     `firebase-config.example.js` (`initializeAppCheck` + `ReCaptchaV3Provider`) — solo
-     reemplaza el placeholder `"TU_RECAPTCHA_V3_SITE_KEY"` por la site key real que te
-     da el asistente.
+   - Para producción (el sitio ya en tu dominio de Netlify — ver paso 7): elige
+     **reCAPTCHA Enterprise** como proveedor (es el que Google recomienda para
+     integraciones nuevas y el que ya trae configurado el código; gratis hasta 1 millón
+     de llamadas/mes, no requiere plan Blaze). Para generar la site key:
+     1. Abre [Google Cloud Console → reCAPTCHA Enterprise](https://console.cloud.google.com/security/recaptcha)
+        (mismo proyecto que tu Firebase).
+     2. Habilita la API si te lo pide (gratis).
+     3. **Crear clave** → tipo **Sitio web** → agrega tu dominio de Netlify
+        (`tu-sitio.netlify.app` o el personalizado) y `localhost` si vas a probar local.
+        Deja **sin marcar** "usar desafío de casilla de verificación".
+     4. Copia la clave de sitio y pégala en la pantalla de App Check de Firebase Console
+        donde te la pide, y también en el bloque de inicialización que **ya viene
+        incluido** en `firebase-config.example.js` (`initializeAppCheck` +
+        `ReCaptchaEnterpriseProvider`) — reemplaza el placeholder
+        `"TU_RECAPTCHA_ENTERPRISE_SITE_KEY"`.
+     - **Importante**: el proveedor que eliges al registrar la app en Firebase Console
+       (paso anterior) y el que usa el código (`ReCaptchaEnterpriseProvider` vs.
+       `ReCaptchaV3Provider`) tienen que ser el mismo — si no coinciden, App Check
+       rechaza las peticiones en silencio.
    - Para desarrollo local (antes de desplegar, probando en tu máquina): descomenta la
      línea `self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;` que ya está en el archivo
      (comentada, justo arriba del bloque de App Check) y pega el token que te da la
@@ -117,40 +135,60 @@ versión preview) — lo que falta es la configuración del lado de Firebase Con
    - Sin este paso, es la causa más común de "todo se ve bien pero el chat no responde"
      una vez que subes el sitio a un dominio público.
 
-## 7. Configurar Firebase Hosting y desplegar
-Este proyecto ya incluye `firebase.json` y `.firebaserc.example` en la raíz (ver sección
-siguiente si necesitas recrearlos). Pasos:
-```bash
-firebase deploy --only hosting
-```
-Esto sube el contenido de `public/` a tu URL `tu-proyecto.web.app` (o tu dominio propio si
-lo conectas en Hosting → Agregar dominio personalizado).
+## 7. Desplegar el sitio estático en Netlify
+Firebase Hosting **no se usa en este proyecto** — Firebase se queda solo como backend
+(Authentication, Firestore, AI Logic). El sitio (`public/`) se publica en Netlify.
 
-**Antes de este paso, verifica dos cosas:**
-- Que `public/js/firebase-config.js` ya exista con tus credenciales reales (paso 2) — si
-  no existe, el sitio se sube pero nada de login/Firestore/IA funcionará.
-- Que la carpeta `public/prueba-local/` NO se publique — `firebase.json` ya la excluye
-  por defecto (ver `"ignore"` en la sección 8), pero si la modificaste, confírmalo. Esa
+1. Sube el proyecto a un repositorio de GitHub (ver paso 9) — Netlify despliega
+   conectando el repo, no con un comando de CLI manual.
+2. En [Netlify](https://app.netlify.com) → **Add new site → Import an existing
+   project** → conecta tu cuenta de GitHub → elige el repositorio.
+3. Configuración de build (Netlify debería detectarla sola desde `netlify.toml`, que ya
+   viene incluido en la raíz del proyecto — confírmala igual):
+   - **Build command**: `rm -rf public/prueba-local` (borra la carpeta de pruebas antes
+     de publicar; ver por qué en el paso 8 más abajo).
+   - **Publish directory**: `public`.
+4. **Deploy site**. Netlify te da un dominio del tipo `algo-al-azar.netlify.app`
+   (puedes renombrarlo en Site settings → Domain management, o conectar un dominio
+   propio ahí mismo).
+5. Desde ahora, cada `git push` a la rama principal redespliega solo — no hace falta
+   ningún comando manual para el sitio (a diferencia de `firebase deploy`, que sí había
+   que repetir a mano en versiones anteriores de este proyecto).
+
+**Antes de dar el deploy por bueno, verifica dos cosas:**
+- Que `public/js/firebase-config.js` ya exista con tus credenciales reales (paso 2) y
+  esté commiteado — si no existe, el sitio se sube pero nada de login/Firestore/IA
+  funcionará.
+- Que `public/prueba-local/` **no sea accesible** en la URL pública de Netlify (ej.
+  `https://tu-sitio.netlify.app/prueba-local/admin.html` debe dar 404). El
+  `netlify.toml` incluido borra esa carpeta en cada build para garantizarlo — esa
   carpeta permite entrar como "admin" sin autenticación real y es solo para desarrollo.
 
 Después del primer deploy, en Firebase Console → Authentication → **Settings → Authorized
-domains**, confirma que tu dominio de Hosting (`tu-proyecto.web.app` o el personalizado)
-aparezca en la lista — si no aparece, el login fallará en producción aunque funcione en
-local.
+domains**, agrega tu dominio de Netlify (`tu-sitio.netlify.app` o el personalizado) — si
+no aparece ahí, el login fallará en producción aunque funcione en local. Repite lo mismo
+para el dominio registrado en **App Check** (paso 6): tiene que ser el de Netlify, no uno
+de Firebase.
 
-## 8. `firebase.json` incluido en este proyecto
+## 8. Archivos de configuración incluidos en este proyecto
+
+`firebase.json` — se usa SOLO para publicar las reglas de Firestore (paso 3), ya no tiene
+sección `hosting`:
 ```json
 {
-  "firestore": { "rules": "docs/firestore.rules" },
-  "hosting": {
-    "public": "public",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "prueba-local/**"],
-    "rewrites": []
-  }
+  "firestore": { "rules": "docs/firestore.rules" }
 }
 ```
-El campo `"ignore": ["prueba-local/**"]` es la red de seguridad para que, aunque olvides
-borrar esa carpeta, `firebase deploy` nunca la publique al dominio público.
+
+`netlify.toml` — en la raíz del proyecto, controla el despliegue del sitio estático:
+```toml
+[build]
+  command = "rm -rf public/prueba-local"
+  publish = "public"
+```
+El `command` es la red de seguridad para que, aunque olvides borrar esa carpeta a mano,
+nunca quede publicada en el dominio público — Netlify la borra antes de subir el sitio
+en cada build.
 
 ## 9. Flujo de Git recomendado
 ```bash
@@ -163,11 +201,10 @@ git push -u origin main
 ```
 Notas:
 - `public/js/firebase-config.js` **sí se commitea** (ver paso 2 — no es secreto).
-- No hace falta `.env` ni variables de entorno: no hay build step, todo es estático.
-- Cada vez que quieras actualizar el sitio en vivo tras un `git push`, corre de nuevo
-  `firebase deploy --only hosting` (Firebase Hosting no redespliega solo con el push a
-  Git a menos que configures GitHub Actions — fuera de alcance de este MVP; hazlo cuando
-  lo pidas).
+- No hace falta `.env` ni variables de entorno: no hay build step real de la app, todo es
+  estático (el único "build command" es el que borra `prueba-local`, ver paso 8).
+- A partir de aquí, conecta el repo en Netlify (paso 7) una sola vez; cada `git push`
+  posterior a la rama principal redespliega automáticamente, sin comandos manuales.
 
 ## 10. Checklist final antes de dar por "funcional" el sitio en línea
 - [ ] `firebase-config.js` con credenciales reales, commiteado y desplegado.
@@ -177,9 +214,12 @@ Notas:
       queda atascado en "confirma tu correo" aunque el rol ya sea admin.
 - [ ] Cloudinary configurado en `public/js/cloudinaryConfig.js` (paso 5).
 - [ ] AI Logic con proveedor Gemini Developer API, modelo concreto fijado (no el alias
-      por defecto sin verificar), y **App Check activo** (paso 6).
-- [ ] Dominio de Hosting agregado a "Authorized domains" en Authentication (paso 7).
-- [ ] `public/prueba-local/` no visible en la URL pública (paso 7 y 8).
+      por defecto sin verificar), y **App Check activo, con la site key generada para tu
+      dominio de Netlify** (paso 6).
+- [ ] Sitio conectado y desplegado en Netlify, con `netlify.toml` detectado (paso 7).
+- [ ] Dominio de Netlify agregado a "Authorized domains" en Firebase Authentication Y en
+      App Check (paso 7).
+- [ ] `public/prueba-local/` da 404 en la URL pública de Netlify (paso 7 y 8).
 - [ ] Probar en la URL real (no en local): registrar un estudiante de prueba, iniciar
       sesión como admin, abrir el chat del Profesor y confirmar que responde (esto valida
       Firebase AI Logic + App Check juntos).
