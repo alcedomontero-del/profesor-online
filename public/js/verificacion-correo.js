@@ -18,7 +18,19 @@ import { signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth
  * con `return`) o `false` si el correo ya está confirmado y puede continuar.
  */
 export async function exigirCorreoVerificado(auth, user, rutaIndex = "../index.html") {
-  if (user.emailVerified) return false;
+  // OJO: `user.emailVerified` puede venir de la sesión guardada localmente por
+  // Firebase (IndexedDB), que no se refresca sola contra el servidor en cada
+  // carga de página. Si alguien confirmó su correo hace poco, esa bandera local
+  // puede seguir en `false` aunque el servidor ya diga `true` — eso sacaría a un
+  // usuario YA VERIFICADO, dando la sensación de "entro y me saca de inmediato".
+  // Por eso forzamos un reload() real contra el servidor antes de decidir.
+  try {
+    await user.reload();
+  } catch (_) {
+    // Si el reload falla (ej. red, o la cuenta ya no existe), seguimos con el
+    // valor que ya teníamos en vez de bloquear por un error de red pasajero.
+  }
+  if (auth.currentUser?.emailVerified) return false;
   try {
     await signOut(auth);
   } catch (_) {
