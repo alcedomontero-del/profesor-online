@@ -30,10 +30,12 @@ export const db = getFirestore(app);
 // causa más común de que "no responda" tras desplegar.
 // Proveedor: reCAPTCHA Enterprise (Google lo recomienda para integraciones nuevas
 // desde 2026, en vez de reCAPTCHA v3; gratis hasta 1 millón de llamadas/mes).
-// 1. Mientras programas en local: descomenta la línea de abajo para activar el modo
-//    debug (te dará un token en la consola del navegador que debes pegar en
-//    Firebase Console > App Check > tu app > "Manage debug tokens").
-// self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+// 1. MODO DEBUG ACTIVADO TEMPORALMENTE para diagnosticar el error 400: esto hará que
+//    aparezca un token largo en la consola del navegador, que debes pegar en
+//    Firebase Console > App Check > tu app > "Manage debug tokens". Recuerda volver
+//    a comentar esta línea (poner // delante) cuando termines de probar, antes de
+//    dejarlo así en producción de forma permanente.
+self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 //
 // 2. Antes de desplegar a producción: reemplaza "TU_RECAPTCHA_ENTERPRISE_SITE_KEY" con
 //    la clave de sitio real que generas en Google Cloud Console > reCAPTCHA Enterprise
