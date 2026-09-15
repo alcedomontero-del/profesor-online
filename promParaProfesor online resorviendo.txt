@@ -1,0 +1,46 @@
+Estoy depurando el login de mi proyecto "Profesor Online" (academia de
+desarrollo web con clases/evaluaciones generadas por IA), publicado en
+Netlify (profesor-online.netlify.app) con backend Firebase, proyecto
+profesor-online-43d5c. Trabajo con VS Code + terminal, y despliego el
+sitio con git push a Netlify.
+
+Historial del bug:
+1. El login fallaba con "Database '(default)' not found" porque en una
+   sesión anterior (otra IA) se creyó que había creado una base de
+   datos Firestore llamada "profesor-online" y se cambió el código para
+   apuntar ahí (getFirestore(app, "profesor-online") en
+   public/js/firebase-config.js, más "database": "profesor-online" en
+   firebase.json).
+2. Ese fix no funcionó: el error cambió a "Database 'profesor-online'
+   not found", y al revisar Firebase Console confirmé que solo existe
+   (o debería existir) una base con ID "default", no una llamada
+   "profesor-online".
+3. Revertí el código a la base (default): firebase-config.js usa
+   getFirestore(app) sin nombre, y quité la clave "database" de
+   firebase.json. Ese ZIP corregido ya está subido a Netlify.
+4. Al correr `firebase deploy --only firestore:rules` en VS Code para
+   publicar docs/firestore.rules, descubrí que el proyecto en realidad
+   NO tiene ninguna base de datos Firestore creada todavía. El CLI
+   intentó crear la base (default) automáticamente y falló con:
+   "Error: Request to .../databases?databaseId=%28default%29 had HTTP
+   Error: 403, This API method requires billing to be enabled."
+5. Diagnóstico: la pantalla de creación de base de datos en Firebase
+   traía preseleccionada la "Enterprise Edition" de Firestore, que sí
+   pide facturación. Necesito crear la base a mano eligiendo
+   explícitamente "Standard Edition" (gratis, plan Spark, la que
+   espera mi código con getFirestore(app) sin nombre), dejando el ID
+   en blanco para que se cree como "(default)", en la región nam5.
+
+Próximo paso pendiente (no lo hice anoche, me fui a dormir):
+- Entrar a Firebase Console → Compilación → Firestore Database → Crear
+  base de datos → elegir "Standard Edition" (NO Enterprise) → dejar ID
+  en blanco → región nam5 → reglas en modo producción/restrictivo.
+- Confirmar que se crea sin pedir facturación.
+- Volver a VS Code y correr: firebase deploy --only firestore:rules
+- Probar el login de nuevo.
+- Pendiente aparte (sin tocar todavía): error 400 en App Check /
+  reCAPTCHA Enterprise (exchangeRecaptchaEnterpriseToken) — revisar
+  que el dominio profesor-online.netlify.app esté en la lista de
+  dominios de la clave reCAPTCHA Enterprise, y que la API key de
+  Firebase (AIzaSyA5yg3...) no tenga restringida la Firebase App Check
+  API en Google Cloud Console.
