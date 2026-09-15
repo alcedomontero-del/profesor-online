@@ -21,10 +21,7 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-// Esta base de datos de Firestore se creó con el nombre "profesor-online" en vez
-// de dejarla como "(default)". El SDK necesita el nombre explícito aquí o siempre
-// buscará "(default)" y fallará con "Database (default) not found".
-export const db = getFirestore(app, "profesor-online");
+export const db = getFirestore(app);
 
 // --- Firebase App Check ---
 // Desde el 2 de noviembre de 2026, Google lo exige para que las llamadas a Gemini

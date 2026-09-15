@@ -1,6 +1,5 @@
 {
   "firestore": {
-    "database": "profesor-online",
     "rules": "docs/firestore.rules"
   }
 }
