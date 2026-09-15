@@ -35,7 +35,7 @@ export const db = getFirestore(app);
 //    Firebase Console > App Check > tu app > "Manage debug tokens". Recuerda volver
 //    a comentar esta línea (poner // delante) cuando termines de probar, antes de
 //    dejarlo así en producción de forma permanente.
-self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+self.FIREBASE_APPCHECK_DEBUG_TOKEN = "be4f5e66-81e6-4c40-8886-d0b2270826ec";
 //
 // 2. Antes de desplegar a producción: reemplaza "TU_RECAPTCHA_ENTERPRISE_SITE_KEY" con
 //    la clave de sitio real que generas en Google Cloud Console > reCAPTCHA Enterprise
