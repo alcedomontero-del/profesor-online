@@ -124,8 +124,15 @@ formRegistro.addEventListener("submit", async (e) => {
     return;
   }
 
+  let cred = null;
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, datos.get("password"));
+    cred = await createUserWithEmailAndPassword(auth, email, datos.get("password"));
+    // OJO: a partir de aquí ya existe una cuenta de Authentication. Si algo de lo
+    // que sigue falla (típicamente setDoc por reglas de Firestore), antes se
+    // quedaba una cuenta huérfana — con login pero SIN documento en "usuarios/" —
+    // y el estudiante veía un error genérico sin poder volver a intentarlo con el
+    // mismo correo (ya está "en uso"). Por eso el catch de abajo ahora deshace
+    // (elimina) la cuenta de Authentication si el perfil no se pudo crear.
     await setDoc(doc(db, "usuarios", cred.user.uid), {
       nombre,
       email,
@@ -140,7 +147,30 @@ formRegistro.addEventListener("submit", async (e) => {
     // que confirme desde su bandeja de entrada.
     mostrarPanelVerificar("Creamos tu cuenta. Te enviamos un correo de confirmación — ábrelo para poder entrar.");
   } catch (err) {
-    errorEl.textContent = "No pudimos crear la cuenta. Verifica los datos.";
+    console.error("Error registrando estudiante:", err);
+    if (cred) {
+      // La cuenta de Authentication sí se creó pero el perfil (u otro paso
+      // posterior) falló: la borramos para no dejar una cuenta fantasma sin
+      // documento en Firestore, y que la persona pueda reintentar limpio.
+      try {
+        await cred.user.delete();
+        errorEl.textContent =
+          `No se pudo crear tu perfil (${err.code || err.message || "error desconocido"}). ` +
+          "No se creó ninguna cuenta — puedes intentar registrarte de nuevo. " +
+          "Si el error persiste, avisa al administrador.";
+      } catch (errBorrado) {
+        // No se pudo ni siquiera deshacerla (ej. la sesión ya expiró) — dejamos
+        // rastro claro en consola porque esto SÍ deja una cuenta huérfana real
+        // que el administrador va a tener que limpiar a mano desde Firebase
+        // Console > Authentication (buscar por el correo e inhabilitar/borrar).
+        console.error("No se pudo deshacer la cuenta de Authentication huérfana:", errBorrado);
+        errorEl.textContent =
+          `No pudimos terminar de crear tu cuenta (${err.code || err.message || "error desconocido"}). ` +
+          "Avisa al administrador con este correo antes de volver a intentar.";
+      }
+    } else {
+      errorEl.textContent = `No pudimos crear la cuenta (${err.code || err.message || "verifica los datos"}).`;
+    }
   }
 });
 
