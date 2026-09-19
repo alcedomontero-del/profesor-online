@@ -11,20 +11,36 @@ onAuthStateChanged(auth, async (user) => {
     window.location.href = "../index.html";
     return;
   }
-  if (await exigirCorreoVerificado(auth, user)) return;
-  uidActual = user.uid;
+  try {
+    if (await exigirCorreoVerificado(auth, user)) return;
+    uidActual = user.uid;
 
-  const snap = await getDoc(doc(db, "usuarios", user.uid));
-  if (!snap.exists()) return;
-  const datos = snap.data();
+    const snap = await getDoc(doc(db, "usuarios", user.uid));
+    if (!snap.exists()) {
+      document.getElementById("saludo").textContent =
+        "No se encontró tu perfil de estudiante. Contacta al administrador.";
+      return;
+    }
+    const datos = snap.data();
 
-  document.getElementById("saludo").textContent = `hola, ${datos.nombre || "estudiante"}`;
-  const estado = datos.suscripcion?.estado || "inactiva";
-  document.getElementById("estado-suscripcion").textContent =
-    estado === "activa"
-      ? `Tu inscripción está activa. Promedio actual: ${Math.round((datos.progreso?.puntajePromedio || 0) * 100)}%` +
-        (datos.progreso?.capacitado ? " — ¡ya estás capacitado!" : ".")
-      : "Tu inscripción no está activa. Contacta al administrador para reactivarla.";
+    document.getElementById("saludo").textContent = `hola, ${datos.nombre || "estudiante"}`;
+    const estado = datos.suscripcion?.estado || "inactiva";
+    document.getElementById("estado-suscripcion").textContent =
+      estado === "activa"
+        ? `Tu inscripción está activa. Promedio actual: ${Math.round((datos.progreso?.puntajePromedio || 0) * 100)}%` +
+          (datos.progreso?.capacitado ? " — ¡ya estás capacitado!" : ".")
+        : "Tu inscripción no está activa. Contacta al administrador para reactivarla.";
+  } catch (err) {
+    // Antes, si esto fallaba (permisos de Firestore, App Check, red, etc.),
+    // la promesa se rechazaba sin que nadie la atrapara y la página se quedaba
+    // en el "cargando…" inicial del HTML para siempre, sin mostrar nada. Ahora
+    // se ve el motivo real en pantalla y en consola.
+    document.getElementById("saludo").textContent = "No se pudo cargar tu perfil.";
+    document.getElementById("estado-suscripcion").textContent =
+      `Error: ${err.code || err.message || "desconocido"}. Revisa la consola (F12) y avisa al administrador.`;
+    console.error("Error cargando perfil de estudiante:", err);
+    return;
+  }
 
   await cargarModulos();
   await cargarEvaluaciones();
@@ -32,27 +48,38 @@ onAuthStateChanged(auth, async (user) => {
 
 async function cargarModulos() {
   const contenedor = document.getElementById("lista-modulos");
-  const snap = await getDocs(collection(db, "modulos"));
-  if (snap.empty) {
-    contenedor.innerHTML = `<p style="color:var(--texto-tenue); font-size:0.85rem;">
-      Todavía no hay clases generadas. Vuelve más tarde.</p>`;
-    return;
-  }
+  try {
+    const snap = await getDocs(collection(db, "modulos"));
+    if (snap.empty) {
+      contenedor.innerHTML = `<p style="color:var(--texto-tenue); font-size:0.85rem;">
+        Todavía no hay clases generadas. Vuelve más tarde.</p>`;
+      return;
+    }
 
-  contenedor.innerHTML = "";
-  snap.forEach((docMod) => {
-    const data = docMod.data();
-    (data.clases || []).forEach((clase) => {
-      const fila = document.createElement("div");
-      fila.style.cssText = "display:flex; justify-content:space-between; align-items:center; border:1px solid var(--borde); border-radius:6px; padding:0.7rem 1rem;";
-      fila.innerHTML = `
-        <span>${clase.titulo || docMod.id} <span style="color:var(--texto-tenue); font-size:0.8rem;">(${docMod.id})</span></span>
-        <button class="btn-primario" style="padding:0.4rem 0.9rem;">Leer</button>
-      `;
-      fila.querySelector("button").addEventListener("click", () => mostrarClase(clase));
-      contenedor.appendChild(fila);
+    contenedor.innerHTML = "";
+    snap.forEach((docMod) => {
+      const data = docMod.data();
+      (data.clases || []).forEach((clase) => {
+        const fila = document.createElement("div");
+        fila.style.cssText = "display:flex; justify-content:space-between; align-items:center; border:1px solid var(--borde); border-radius:6px; padding:0.7rem 1rem;";
+        fila.innerHTML = `
+          <span>${clase.titulo || docMod.id} <span style="color:var(--texto-tenue); font-size:0.8rem;">(${docMod.id})</span></span>
+          <button class="btn-primario" style="padding:0.4rem 0.9rem;">Leer</button>
+        `;
+        fila.querySelector("button").addEventListener("click", () => mostrarClase(clase));
+        contenedor.appendChild(fila);
+      });
     });
-  });
+  } catch (err) {
+    // Mismo problema que arriba: sin este catch, un error aquí (típicamente
+    // "Missing or insufficient permissions" si las reglas de Firestore no se
+    // desplegaron, o un rechazo de App Check) dejaba el "Cargando…" pegado
+    // para siempre sin ninguna pista de qué pasó.
+    contenedor.innerHTML = `<p style="color:#E8703D; font-size:0.85rem;">
+      No se pudieron cargar las clases (${err.code || err.message || "error desconocido"}).
+      Revisa la consola (F12) y avisa al administrador.</p>`;
+    console.error("Error cargando módulos:", err);
+  }
 }
 
 function mostrarClase(clase) {
@@ -77,25 +104,32 @@ function mostrarClase(clase) {
 
 async function cargarEvaluaciones() {
   const contenedor = document.getElementById("lista-evaluaciones");
-  const snap = await getDocs(collection(db, "evaluaciones"));
-  if (snap.empty) {
-    contenedor.innerHTML = `<p style="color:var(--texto-tenue); font-size:0.85rem;">
-      Todavía no hay evaluaciones generadas. Vuelve más tarde.</p>`;
-    return;
-  }
+  try {
+    const snap = await getDocs(collection(db, "evaluaciones"));
+    if (snap.empty) {
+      contenedor.innerHTML = `<p style="color:var(--texto-tenue); font-size:0.85rem;">
+        Todavía no hay evaluaciones generadas. Vuelve más tarde.</p>`;
+      return;
+    }
 
-  contenedor.innerHTML = "";
-  snap.forEach((docEval) => {
-    const data = docEval.data();
-    const fila = document.createElement("div");
-    fila.style.cssText = "display:flex; justify-content:space-between; align-items:center; border:1px solid var(--borde); border-radius:6px; padding:0.7rem 1rem;";
-    fila.innerHTML = `
-      <span>${data.moduloId} <span style="color:var(--texto-tenue); font-size:0.8rem;">(${data.tipo})</span></span>
-      <button class="btn-primario" style="padding:0.4rem 0.9rem;" data-id="${docEval.id}">Resolver</button>
-    `;
-    fila.querySelector("button").addEventListener("click", () => mostrarQuiz(docEval.id, data));
-    contenedor.appendChild(fila);
-  });
+    contenedor.innerHTML = "";
+    snap.forEach((docEval) => {
+      const data = docEval.data();
+      const fila = document.createElement("div");
+      fila.style.cssText = "display:flex; justify-content:space-between; align-items:center; border:1px solid var(--borde); border-radius:6px; padding:0.7rem 1rem;";
+      fila.innerHTML = `
+        <span>${data.moduloId} <span style="color:var(--texto-tenue); font-size:0.8rem;">(${data.tipo})</span></span>
+        <button class="btn-primario" style="padding:0.4rem 0.9rem;" data-id="${docEval.id}">Resolver</button>
+      `;
+      fila.querySelector("button").addEventListener("click", () => mostrarQuiz(docEval.id, data));
+      contenedor.appendChild(fila);
+    });
+  } catch (err) {
+    contenedor.innerHTML = `<p style="color:#E8703D; font-size:0.85rem;">
+      No se pudieron cargar las evaluaciones (${err.code || err.message || "error desconocido"}).
+      Revisa la consola (F12) y avisa al administrador.</p>`;
+    console.error("Error cargando evaluaciones:", err);
+  }
 }
 
 function mostrarQuiz(evaluacionId, data) {
